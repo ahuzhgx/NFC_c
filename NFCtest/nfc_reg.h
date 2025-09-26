@@ -1,11 +1,11 @@
-#ifndef NFC_H
-#define NFC_H
+#ifndef NFC_REG_H
+#define NFC_REG_H
 
 #include "xil_io.h"
 #include "sleep.h"
 
 /**
- * @file    nfc.h
+ * @file    nfc.reg.h
  * @brief   NFC 控制器驱动头文件
  *          提供对 NFC 模块寄存器的操作接口，包括：
  *          - 设置操作码（opcode）
@@ -95,4 +95,4 @@ u32  NFC_GetStatus(void);
  */
 void NFC_WaitIdle(void);
 
-#endif // NFC_H
+#endif // NFC_REG_H
