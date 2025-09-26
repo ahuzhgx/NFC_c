@@ -1,0 +1,49 @@
+#ifndef NFC_H
+#define NFC_H
+
+#include "xil_io.h"
+#include "sleep.h"
+
+// NFC 基地址（根据 Address Editor 确认）
+#define NFC_BASEADDR   0x40000000U
+
+// NFC 寄存器偏移
+#define NFC_OPCODE_REG       0x00  // [15:0]
+#define NFC_LEN_REG          0x04  // [23:0]
+#define NFC_LBALOW_REG       0x08  // [31:0]
+#define NFC_LBAHIGH_REG      0x0C  // [15:0]
+#define NFC_SEL_REG          0x10  // 通道/Plane选择
+#define NFC_STATUS_REG       0x14  // 状态寄存器
+
+// 操作码定义
+// ================= NAND Flash OpCode 定义 =================
+#define NFC_CMD_RESET        0x00FF  // FF
+#define NFC_CMD_SET_FEATURE1 0x01EF  // EF
+#define NFC_CMD_SET_FEATURE2 0x02EF  // EF
+#define NFC_CMD_GET_FEATURE  0x01EE  // EE
+#define NFC_CMD_READ_PARAM1  0x00EC  // EC
+#define NFC_CMD_READ_PARAM2  0x2090  // 90
+#define NFC_CMD_READ_PARAM3  0x0090  // 90
+#define NFC_CMD_READ_UNIQUE  0x00ED  // ED
+#define NFC_CMD_BLOCK_ERASE  0xD060  // 60h+D0h
+#define NFC_CMD_PAGE_PROG    0x1080  // 80h+10h
+#define NFC_CMD_PAGE_READ    0x3000  // 00h+30h
+
+// 状态寄存器位
+#define NFC_STATUS_BUSY      (1 << 31)  // ~busy_ch
+#define NFC_STATUS_LENERR    (1 << 30)  // len_err
+#define NFC_STATUS_RD_EMPTY  (1 << 5)
+#define NFC_STATUS_RD_FULL   (1 << 4)
+#define NFC_STATUS_WR_EMPTY  (1 << 3)
+#define NFC_STATUS_WR_FULL   (1 << 2)
+
+
+// API
+void NFC_SetOpcode(u32 opcode);
+void NFC_SetLen(u32 len);
+void NFC_SetLBA(u64 lba);
+void NFC_SetSel(u32 sel);
+u32  NFC_GetStatus(void);
+void NFC_WaitIdle(void);
+
+#endif // NFC_H
