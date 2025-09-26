@@ -1,8 +1,8 @@
-#include "nfc.h"
+#include "nfc_reg.h"
 
 /**
  ******************************************************************************
- * @file    nfc.c
+ * @file    nfc_reg.c
  * @brief   NFC 控制器驱动函数实现
  *          通过 AXI4-Lite 接口操作 NFC 模块寄存器，支持：
  *          - 设置操作码（opcode）
