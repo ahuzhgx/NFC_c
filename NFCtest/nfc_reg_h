@@ -4,46 +4,95 @@
 #include "xil_io.h"
 #include "sleep.h"
 
-// NFC 基地址（根据 Address Editor 确认）
-#define NFC_BASEADDR   0x40000000U
+/**
+ * @file    nfc.h
+ * @brief   NFC 控制器驱动头文件
+ *          提供对 NFC 模块寄存器的操作接口，包括：
+ *          - 设置操作码（opcode）
+ *          - 设置逻辑块地址（LBA）
+ *          - 设置数据长度
+ *          - 选择通道/Plane
+ *          - 查询状态寄存器并等待操作完成
+ * 
+ * @author  SCMI
+ * @date    2025-09-26
+ * @version 1.0
+ * 
+ * @note
+ * 1. 本驱动适用于 MicroBlaze + AXI4-Lite 架构下的 NFC 模块。
+ * 2. 写入操作码后，RTL 会根据 opcode 启动对应的 NAND 操作。
+ * 3. LBA 为 48bit，拆分为低 32bit 和高 16bit 寄存器。
+ * 4. 状态寄存器包含 busy、FIFO 空满、长度错误等信息。
+ */
 
-// NFC 寄存器偏移
-#define NFC_OPCODE_REG       0x00  // [15:0]
-#define NFC_LEN_REG          0x04  // [23:0]
-#define NFC_LBALOW_REG       0x08  // [31:0]
-#define NFC_LBAHIGH_REG      0x0C  // [15:0]
-#define NFC_SEL_REG          0x10  // 通道/Plane选择
-#define NFC_STATUS_REG       0x14  // 状态寄存器
+/* ------------------- NFC 基地址 ------------------- */
+#define NFC_BASEADDR   0x40000000U  /**< NFC 模块基地址（根据 Address Editor 确认） */
 
-// 操作码定义
-// ================= NAND Flash OpCode 定义 =================
-#define NFC_CMD_RESET        0x00FF  // FF
-#define NFC_CMD_SET_FEATURE1 0x01EF  // EF
-#define NFC_CMD_SET_FEATURE2 0x02EF  // EF
-#define NFC_CMD_GET_FEATURE  0x01EE  // EE
-#define NFC_CMD_READ_PARAM1  0x00EC  // EC
-#define NFC_CMD_READ_PARAM2  0x2090  // 90
-#define NFC_CMD_READ_PARAM3  0x0090  // 90
-#define NFC_CMD_READ_UNIQUE  0x00ED  // ED
-#define NFC_CMD_BLOCK_ERASE  0xD060  // 60h+D0h
-#define NFC_CMD_PAGE_PROG    0x1080  // 80h+10h
-#define NFC_CMD_PAGE_READ    0x3000  // 00h+30h
+/* ------------------- NFC 寄存器偏移 ------------------- */
+#define NFC_OPCODE_REG       0x00  /**< [15:0] 操作码寄存器 */
+#define NFC_LEN_REG          0x04  /**< [23:0] 数据长度寄存器 */
+#define NFC_LBALOW_REG       0x08  /**< [31:0] LBA 低 32 位 */
+#define NFC_LBAHIGH_REG      0x0C  /**< [15:0] LBA 高 16 位 */
+#define NFC_SEL_REG          0x10  /**< 通道/Plane 选择寄存器 */
+#define NFC_STATUS_REG       0x14  /**< 状态寄存器 */
 
-// 状态寄存器位
-#define NFC_STATUS_BUSY      (1 << 31)  // ~busy_ch
-#define NFC_STATUS_LENERR    (1 << 30)  // len_err
-#define NFC_STATUS_RD_EMPTY  (1 << 5)
-#define NFC_STATUS_RD_FULL   (1 << 4)
-#define NFC_STATUS_WR_EMPTY  (1 << 3)
-#define NFC_STATUS_WR_FULL   (1 << 2)
+/* ------------------- 操作码定义 ------------------- */
+// NAND Flash 操作码（opcode），写入 NFC_OPCODE_REG
+#define NFC_CMD_RESET        0x00FF  /**< FF, Reset */
+#define NFC_CMD_SET_FEATURE1 0x01EF  /**< EF, Set Feature 1 */
+#define NFC_CMD_SET_FEATURE2 0x02EF  /**< EF, Set Feature 2 */
+#define NFC_CMD_GET_FEATURE  0x01EE  /**< EE, Get Feature */
+#define NFC_CMD_READ_PARAM1  0x00EC  /**< EC, Read Parameter Page */
+#define NFC_CMD_READ_PARAM2  0x2090  /**< 90, Read Parameter Page */
+#define NFC_CMD_READ_PARAM3  0x0090  /**< 90, Read Parameter Page */
+#define NFC_CMD_READ_UNIQUE  0x00ED  /**< ED, Read Unique ID */
+#define NFC_CMD_BLOCK_ERASE  0xD060  /**< 60h + D0h, Block Erase */
+#define NFC_CMD_PAGE_PROG    0x1080  /**< 80h + 10h, Page Program */
+#define NFC_CMD_PAGE_READ    0x3000  /**< 00h + 30h, Page Read */
 
+/* ------------------- 状态寄存器位 ------------------- */
+#define NFC_STATUS_BUSY      (1 << 31) /**< Busy 位，0 = 空闲，1 = 忙 */
+#define NFC_STATUS_LENERR    (1 << 30) /**< 长度错误标志 */
+#define NFC_STATUS_RD_EMPTY  (1 << 5)  /**< 读 FIFO 空 */
+#define NFC_STATUS_RD_FULL   (1 << 4)  /**< 读 FIFO 满 */
+#define NFC_STATUS_WR_EMPTY  (1 << 3)  /**< 写 FIFO 空 */
+#define NFC_STATUS_WR_FULL   (1 << 2)  /**< 写 FIFO 满 */
 
-// API
+/* ------------------- NFC 驱动 API ------------------- */
+/**
+ * @brief 设置 NFC 操作码
+ * @param opcode 操作码（16bit），参考 NFC_CMD_* 宏定义
+ */
 void NFC_SetOpcode(u32 opcode);
+
+/**
+ * @brief 设置 NFC 操作的数据长度
+ * @param len 数据长度（字节），低 24 位有效
+ */
 void NFC_SetLen(u32 len);
+
+/**
+ * @brief 设置 NFC 的逻辑块地址（LBA）
+ * @param lba 48bit LBA
+ */
 void NFC_SetLBA(u64 lba);
+
+/**
+ * @brief 设置 NFC 通道/Plane 选择
+ * @param sel 选择值（通常为 0 或 1）
+ */
 void NFC_SetSel(u32 sel);
+
+/**
+ * @brief 读取 NFC 状态寄存器
+ * @return 32bit 状态寄存器值
+ */
 u32  NFC_GetStatus(void);
+
+/**
+ * @brief 等待 NFC 空闲
+ * @note 循环检查 busy 位，直到操作完成
+ */
 void NFC_WaitIdle(void);
 
 #endif // NFC_H
