@@ -95,4 +95,7 @@ u32  NFC_GetStatus(void);
  */
 void NFC_WaitIdle(void);
 
+void NFC_WaitRdfifoempty(void);
+
+void NFC_WaitWrfifofull(void);
 #endif // NFC_REG_H

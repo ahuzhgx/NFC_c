@@ -90,3 +90,16 @@ void NFC_WaitIdle(void) {
         usleep(10); // 延迟 10 微秒，避免忙等占满 CPU
     }
 }
+
+//有一些问题，当正在进行的读写操作无法检测FIFO的空满
+void NFC_WaitRdfifoNotEmpty(void) {
+    while (NFC_GetStatus() & NFC_STATUS_RD_EMPTY) {
+        usleep(10); // 延迟 10 微秒，避免忙等占满 CPU
+    }
+}
+
+void NFC_WaitWrfifoNotFull(void) {
+    while (NFC_GetStatus() & NFC_STATUS_WR_FULL) {
+        usleep(10); // 延迟 10 微秒，避免忙等占满 CPU
+    }
+}
